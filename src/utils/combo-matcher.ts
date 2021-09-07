@@ -32,6 +32,13 @@ export class ComboMatcher {
       );
       if (hasEmote) {
         this.currentComboAmount++;
+        if (this.currentComboAmount >= this.minComboAmount) {
+          this.lastComboTime = Date.now();
+          this.layout.handleCombo(
+            this.currentComboEmote!,
+            this.currentComboAmount,
+          );
+        }
       } else {
         this.endCombo();
       }
@@ -41,30 +48,24 @@ export class ComboMatcher {
     for (const emote of emotes) {
       if (prevEmotes.has(emote.code)) {
         // Has a combo!
-        this.currentComboAmount = 2;
-        this.currentComboEmote = emote;
+
+        const now = Date.now();
+        const delta = now - this.lastComboTime;
+
+        const notCooldown =
+          this.comboCooldown === 0 || delta > this.comboCooldown;
+
+        if (notCooldown) {
+          this.currentComboAmount = 2;
+          this.currentComboEmote = emote;
+        }
         return;
       }
     }
   }
 
   private endCombo() {
-    const now = Date.now();
-    const delta = now - this.lastComboTime;
-    this.lastComboTime = now;
-
-    const notCooldown =
-      this.comboCooldown === 0 || delta > this.comboCooldown;
-    if (
-      this.currentComboAmount >= this.minComboAmount &&
-      notCooldown
-    ) {
-      // Actually fire the fucking event.
-      this.layout.handleCombo(
-        this.currentComboEmote!,
-        this.currentComboAmount,
-      );
-    }
+    this.lastComboTime = Date.now();
 
     this.currentComboAmount = 0;
     this.currentComboEmote = null;
